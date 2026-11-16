@@ -8,6 +8,7 @@ export interface Event {
   kuota: number;
   terisi: number;
   deskripsi: string;
+  gambar?: string;
 }
 
 export const events: Event[] = [
@@ -22,6 +23,7 @@ export const events: Event[] = [
     terisi: 126,
     deskripsi:
       "Nikmati penampilan musisi indie pilihan dalam satu malam penuh musik, cerita, dan suasana yang hangat.",
+    gambar: "/img/event-1.png",
   },
   {
     id: 2,
@@ -34,6 +36,7 @@ export const events: Event[] = [
     terisi: 24,
     deskripsi:
       "Workshop praktis untuk membangun aplikasi web modern dengan Next.js dan TypeScript.",
+    gambar: "/img/event-2.png",
   },
 ];
 

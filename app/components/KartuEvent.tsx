@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatTanggal, rupiah, sisaTiket, type Event } from "@/Data/events";
+import Image from "next/image";
+import { formatTanggal, rupiah, sisaTiket, type Event } from "@/data/events";
 import Ikon from "./Ikon";
 import TombolFavorite from "./TombolFavorite";
 
@@ -9,6 +10,13 @@ export default function KartuEvent({ event }: { event: Event }) {
 
   return (
     <article className="event-card">
+      <Image
+        src={event.gambar ?? "/img/default.png"}
+        alt={event.judul}
+        width={400}
+        height={210}
+        className="mb-3 rounded-lg"
+      />
       <div className="event-card-top">
         <span className="category-tag">{event.kategori}</span>
         {laris && <span className="popular-tag">Banyak diminati</span>}

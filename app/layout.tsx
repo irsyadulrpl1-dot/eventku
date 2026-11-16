@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import localFont from "next/font/local";
 import Navbar from "@/components/Navbar";
 import "./globals.css";
+
+const poppins = localFont({
+  src: [
+    { path: "./fonts/Poppins-Regular.ttf", weight: "400" },
+    { path: "./fonts/Poppins-Bold.ttf", weight: "700" },
+  ],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -16,7 +24,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
-      <body>
+      <body className={`${poppins.className} flex min-h-screen flex-col bg-slate-50 text-slate-800`}>
         <Navbar />
         <main className="site-main">{children}</main>
         <footer className="site-footer">
@@ -32,3 +40,4 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
+```[cite: 14]

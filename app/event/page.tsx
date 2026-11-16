@@ -1,14 +1,14 @@
-import { events } from "@/Data/events";
+import { Metadata } from "next"; // <-- Tambahkan baris ini
+import { ambilEvents } from "@/Data/ambil";
 import KatalogInteraktif from "@/components/KatalogInteraktif";
 
-export default function HalamanEvent() {
+export const metadata: Metadata = { title: "Katalog Event" };
+
+export default async function Katalog() {
+  const events = await ambilEvents();
   return (
-    <div className="page-wrap inner-page">
-      <header className="page-heading">
-        <span className="eyebrow">Kalender pengalaman</span>
-        <h1>Jelajahi event</h1>
-        <p>Temukan acara yang cocok dengan minat dan waktumu.</p>
-      </header>
+    <div>
+      <h1 className="mb-4 text-2xl font-bold">Katalog Event</h1>
       <KatalogInteraktif events={events} />
     </div>
   );
