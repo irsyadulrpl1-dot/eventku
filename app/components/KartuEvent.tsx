@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { formatTanggal, rupiah, sisaTiket, type Event } from "@/data/events";
+import { formatTanggal, rupiah, sisaTiket, type Event } from "@/Data/events";
 import Ikon from "./Ikon";
 import TombolFavorite from "./TombolFavorite";
 
