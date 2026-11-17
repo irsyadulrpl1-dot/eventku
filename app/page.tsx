@@ -1,15 +1,47 @@
 import Link from "next/link";
-import { events } from "@/Data/events";
+import { Suspense } from "react";
+import { ambilEvents } from "@/Data/ambil"; // Menggunakan fungsi ambilEvents yang sudah terpusat
 import Ikon from "@/components/Ikon";
 import KartuEvent from "@/components/KartuEvent";
 
-export default function Beranda() {
+// Komponen terpisah untuk mengambil dan merender daftar event
+async function DaftarEventTerdekat() {
+  const events = await ambilEvents().catch(() => null);
+
+  if (!events) {
+    return (
+      <div className="empty-state compact">
+        <h2>Gagal memuat event</h2>
+        <p>Pastikan koneksi database Supabase kamu sudah benar.</p>
+      </div>
+    );
+  }
+
   const terdekat = [...events]
     .sort(
       (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
     )
     .slice(0, 3);
 
+  if (terdekat.length === 0) {
+    return (
+      <div className="empty-state compact">
+        <h2>Belum ada event tersedia</h2>
+        <p>Silakan kembali lagi nanti untuk melihat event terbaru.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="event-grid">
+      {terdekat.map((event) => (
+        <KartuEvent key={event.id} event={event} />
+      ))}
+    </div>
+  );
+}
+
+export default function Beranda() {
   return (
     <div className="page-wrap">
       <section className="hero">
@@ -29,7 +61,9 @@ export default function Beranda() {
               Jelajahi event
               <Ikon nama="arrow-right" />
             </Link>
-            <span className="hero-note">Event pilihan, pengalaman berkesan</span>
+            <span className="hero-note">
+              Event pilihan, pengalaman berkesan
+            </span>
           </div>
         </div>
         <div className="hero-art" aria-hidden="true">
@@ -52,7 +86,11 @@ export default function Beranda() {
               <span>EK–2027</span>
             </div>
           </div>
-          <div className="hero-sticker">Your next story<br />starts here</div>
+          <div className="hero-sticker">
+            Your next story
+            <br />
+            starts here
+          </div>
         </div>
       </section>
 
@@ -67,18 +105,17 @@ export default function Beranda() {
             <Ikon nama="arrow-right" />
           </Link>
         </div>
-        {terdekat.length === 0 ? (
-          <div className="empty-state compact">
-            <h2>Belum ada event tersedia</h2>
-            <p>Silakan kembali lagi nanti untuk melihat event terbaru.</p>
-          </div>
-        ) : (
-          <div className="event-grid">
-            {terdekat.map((event) => (
-              <KartuEvent key={event.id} event={event} />
-            ))}
-          </div>
-        )}
+
+        {/* Membungkus komponen data asinkron dengan Suspense */}
+        <Suspense
+          fallback={
+            <div className="empty-state compact">
+              <p>Memuat event dari Supabase...</p>
+            </div>
+          }
+        >
+          <DaftarEventTerdekat />
+        </Suspense>
       </section>
     </div>
   );

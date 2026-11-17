@@ -1,7 +1,20 @@
-import { events } from "@/Data/events";
+import { ambilEvents } from "@/Data/ambil";
+import { supabase } from "@/lib/supabase";
 
 export async function GET() {
-  return Response.json(events);
+  try {
+    const events = await ambilEvents();
+    return Response.json(events);
+  } catch (error: unknown) {
+    return Response.json(
+      {
+        message:
+          "Gagal memuat event dari database: " +
+          (error instanceof Error ? error.message : "Kesalahan tidak diketahui."),
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -25,13 +38,21 @@ export async function POST(request: Request) {
       { status: 404 },
     );
   }
-  const event = events.find((item) => item.id === eventId);
-  if (!event) {
+
+  // Ambil data event dari Supabase berdasarkan ID
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", eventId)
+    .single();
+
+  if (eventError || !event) {
     return Response.json(
       { message: "Event tidak ditemukan atau tidak tersedia." },
       { status: 404 },
     );
   }
+
   if (typeof nama !== "string" || nama.trim().length < 3) {
     return Response.json(
       { message: "Nama pemesan minimal 3 karakter." },
@@ -59,8 +80,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const sisa = event.kuota - event.terisi;
-  if (sisa < 1 || Number(jumlah) > sisa) {
+
+  const jumlahTiket = Number(jumlah);
+  const sisa = (event.kuota || 0) - (event.terisi || 0);
+  if (sisa < 1 || jumlahTiket > sisa) {
     return Response.json(
       {
         message:
@@ -72,8 +95,35 @@ export async function POST(request: Request) {
     );
   }
 
+  // Simpan pesanan ke tabel 'pesanan' di database Supabase
+  const totalHarga = event.harga * jumlahTiket;
+  const { error: insertError } = await supabase.from("pesanan").insert([
+    {
+      event_id: event.id,
+      nama_pemesan: (nama as string).trim(),
+      email: (email as string).trim(),
+      jumlah_tiket: jumlahTiket,
+      total_harga: totalHarga,
+    },
+  ]);
+
+  if (insertError) {
+    return Response.json(
+      {
+        message: "Gagal menyimpan pesanan ke database: " + insertError.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  // Update jumlah tiket terisi pada tabel 'events' di Supabase
+  await supabase
+    .from("events")
+    .update({ terisi: (event.terisi || 0) + jumlahTiket })
+    .eq("id", event.id);
+
   return Response.json({
     message:
-      "Data pemesanan berhasil divalidasi. Ini masih simulasi dan belum tersimpan ke database.",
+      "Pesanan berhasil diproses dan tersimpan secara permanen ke database Supabase!",
   });
 }

@@ -2,8 +2,11 @@
 
 import { useRef, useState } from "react";
 import { rupiah, sisaTiket, type Event } from "@/Data/events";
+import { supabase } from "../../lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function FormPesan({ event }: { event: Event }) {
+  const router = useRouter();
   const sisa = sisaTiket(event);
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
@@ -42,32 +45,55 @@ export default function FormPesan({ event }: { event: Event }) {
 
     pengirimanAktif.current = true;
     setMemproses(true);
+
     try {
-      const response = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventId: event.id,
-          nama: nama.trim(),
+      const totalHarga = event.harga * jumlahTiket;
+
+      // 1. Simpan pesanan ke tabel 'pesanan' di Supabase
+      const { error: insertError } = await supabase.from("pesanan").insert([
+        {
+          event_id: event.id,
+          nama_pemesan: nama.trim(),
           email: email.trim(),
-          jumlah: jumlahTiket,
-        }),
-      });
-      const result: { message?: string } = await response.json();
-      if (!response.ok) {
-        setJenisPesan("error");
-        setPesan(result.message ?? "Pemesanan tidak dapat diproses.");
-        return;
+          jumlah_tiket: jumlahTiket,
+          total_harga: totalHarga,
+        },
+      ]);
+
+      if (insertError) throw insertError;
+
+      // 2. Update jumlah tiket terisi pada tabel 'events'
+      const { error: updateError } = await supabase
+        .from("events")
+        .update({ terisi: (event.terisi || 0) + jumlahTiket })
+        .eq("id", event.id);
+
+      if (updateError) {
+        console.error("Gagal memperbarui kuota event:", updateError.message);
       }
 
       setJenisPesan("success");
-      setPesan(
-        result.message ??
-          "Pemesanan tervalidasi. Pesanan belum tersimpan permanen.",
-      );
-    } catch {
+      setPesan("Pesanan berhasil disimpan ke database!");
+
+      // 3. Arahkan otomatis ke halaman pesanan setelah 1.5 detik
+      setTimeout(() => {
+        router.push("/pesanan");
+        router.refresh();
+      }, 1500);
+    } catch (err: unknown) {
       setJenisPesan("error");
-      setPesan("Terjadi gangguan koneksi. Silakan coba kembali.");
+      const pesanKesalahan =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" &&
+              err !== null &&
+              "message" in err &&
+              typeof err.message === "string"
+            ? err.message
+            : "Terjadi gangguan koneksi. Silakan coba kembali.";
+      setPesan(
+        pesanKesalahan,
+      );
     } finally {
       pengirimanAktif.current = false;
       setMemproses(false);
@@ -126,7 +152,11 @@ export default function FormPesan({ event }: { event: Event }) {
       </div>
 
       {pesan && (
-        <p className={`form-message ${jenisPesan}`} role="status" aria-live="polite">
+        <p
+          className={`form-message ${jenisPesan}`}
+          role="status"
+          aria-live="polite"
+        >
           {pesan}
         </p>
       )}
@@ -136,10 +166,14 @@ export default function FormPesan({ event }: { event: Event }) {
         type="submit"
         disabled={memproses || sisa === 0}
       >
-        {memproses ? "Memproses..." : sisa === 0 ? "Tiket habis" : "Lanjut pesan"}
+        {memproses
+          ? "Memproses..."
+          : sisa === 0
+            ? "Tiket habis"
+            : "Lanjut pesan"}
       </button>
       <p className="booking-note">
-        Pemesanan saat ini merupakan simulasi dan belum tersimpan ke database.
+        Pemesanan akan langsung tersimpan secara permanen ke database Supabase.
       </p>
     </form>
   );

@@ -1,9 +1,10 @@
-export interface Pesanan {
+export type Pesanan = {
   nomor: number;
-  judul: string;
+  event_id: number;
   nama: string;
+  email: string;
   jumlah: number;
   total: number;
-}
-
-export const pesanan: Pesanan[] = [];
+  dibuat: string;
+  events: { judul: string } | null;
+};
