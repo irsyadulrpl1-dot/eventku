@@ -10,7 +10,7 @@ export async function batalkanPesanan(formData: FormData) {
   // Ambil data pesanan dulu untuk mengembalikan kuota event
   const { data: pesanan } = await supabaseAdmin
     .from("pesanan")
-    .select("event_id, jumlah")
+    .select("event_id, jumlah_tiket")
     .eq("nomor", nomor)
     .single();
 
@@ -23,7 +23,10 @@ export async function batalkanPesanan(formData: FormData) {
       .single();
 
     if (event) {
-      const terisiBaru = Math.max(0, event.terisi - pesanan.jumlah);
+      const terisiBaru = Math.max(
+        0,
+        event.terisi - pesanan.jumlah_tiket,
+      );
       await supabaseAdmin
         .from("events")
         .update({ terisi: terisiBaru })

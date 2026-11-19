@@ -40,12 +40,15 @@ export async function hitungPesanan(
 ): Promise<{ totalPesanan: number; totalTiket: number }> {
   const { data, error } = await supabaseAdmin
     .from("pesanan")
-    .select("jumlah")
+    .select("jumlah_tiket")
     .eq("event_id", eventId);
   if (error) throw new Error("Gagal menghitung pesanan: " + error.message);
 
   const totalPesanan = data.length;
-  const totalTiket = data.reduce((acc, curr) => acc + (curr.jumlah || 0), 0);
+  const totalTiket = data.reduce(
+    (acc, curr) => acc + (curr.jumlah_tiket || 0),
+    0,
+  );
 
   return { totalPesanan, totalTiket };
 }
@@ -53,8 +56,19 @@ export async function hitungPesanan(
 export async function ambilPesanan(): Promise<Pesanan[]> {
   const { data, error } = await supabaseAdmin
     .from("pesanan")
-    .select("*, events(judul)")
+    .select("nomor, event_id, nama_pemesan, email, jumlah_tiket, total_harga, dibuat, events(judul)")
     .order("nomor", { ascending: false });
   if (error) throw new Error("Gagal memuat pesanan: " + error.message);
-  return data as Pesanan[];
+  return data.map((item) => ({
+    nomor: item.nomor,
+    event_id: item.event_id,
+    nama_pemesan: item.nama_pemesan,
+    email: item.email,
+    jumlah_tiket: item.jumlah_tiket,
+    total_harga: item.total_harga,
+    dibuat: item.dibuat,
+    events: Array.isArray(item.events)
+      ? item.events[0] ?? null
+      : item.events,
+  })) as Pesanan[];
 }

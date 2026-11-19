@@ -1,135 +1,60 @@
-"use server";
+import Link from "next/link";
+import { ambilPesanan } from "@/Data/ambil";
+import { rupiah } from "@/Data/events";
+import { batalkanPesanan } from "@/app/actions";
+import { Suspense } from "react";
 
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
-import { ambilEvent } from "@/Data/ambil";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+async function DaftarPesanan() {
+  const pesanan = await ambilPesanan().catch(() => []);
 
-export type HasilPesan = {
-  berhasil: boolean;
-  pesan: string;
-  galat: { nama?: string; email?: string; jumlah?: string };
-  isian: { nama: string; email: string };
-};
-
-export async function pesanTiket(
-  _sebelum: HasilPesan,
-  formData: FormData,
-): Promise<HasilPesan> {
-  const eventId = Number(formData.get("eventId"));
-  const nama = String(formData.get("nama") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
-  const jumlah = Number(formData.get("jumlah"));
-  const isian = { nama, email };
-
-  // jangan percaya browser: baca event dari database, bukan dari formulir
-  const event = await ambilEvent(eventId);
-  if (!event) {
-    return {
-      berhasil: false,
-      pesan: "Event tidak ditemukan.",
-      galat: {},
-      isian,
-    };
-  }
-
-  const sisa = event.kuota - event.terisi;
-  const galat: HasilPesan["galat"] = {};
-  if (nama.length < 3) galat.nama = "Nama minimal 3 huruf.";
-  else if (nama.length > 40) galat.nama = "Nama maksimal 40 huruf.";
-  if (!email.includes("@")) galat.email = "Email harus memuat tanda @.";
-  if (!Number.isInteger(jumlah) || jumlah < 1)
-    galat.jumlah = "Jumlah tiket minimal 1.";
-  else if (jumlah > 5) galat.jumlah = "Maksimal 5 tiket per pesanan.";
-  else if (jumlah > sisa) galat.jumlah = `Sisa tiket hanya ${sisa}.`;
-
-  if (Object.keys(galat).length > 0) {
-    return {
-      berhasil: false,
-      pesan: "Periksa lagi isian yang merah.",
-      galat,
-      isian,
-    };
-  }
-
-  const { data: baru, error } = await supabaseAdmin
-    .from("pesanan")
-    .insert({
-      event_id: eventId,
-      nama,
-      email,
-      jumlah,
-      total: event.harga * jumlah,
-    })
-    .select("nomor")
-    .single();
-
-  if (error) {
-    return {
-      berhasil: false,
-      pesan: "Pesanan gagal disimpan. Coba lagi.",
-      galat: {},
-      isian,
-    };
-  }
-
-  const { error: galatKuota } = await supabaseAdmin
-    .from("events")
-    .update({ terisi: event.terisi + jumlah })
-    .eq("id", eventId);
-
-  if (galatKuota) {
-    return {
-      berhasil: false,
-      pesan:
-        "Pesanan tersimpan, tetapi kuota gagal diperbarui. Hubungi panitia.",
-      galat: {},
-      isian,
-    };
-  }
-
-  const toples = await cookies();
-  toples.set("nama", nama, { maxAge: 60 * 60 * 24 * 30 });
-
-  revalidatePath("/event");
-  revalidatePath(`/event/${eventId}`);
-  revalidatePath("/pesanan");
-
-  return {
-    berhasil: true,
-    pesan: `Pesanan #${baru.nomor} tersimpan: ${jumlah} tiket untuk ${nama}.`,
-    galat: {},
-    isian: { nama, email: "" },
-  };
+  return (
+    <>
+      {pesanan.length === 0 ? (
+        <div className="empty-state">
+          <h2>Belum ada pesanan</h2>
+          <p>Pesan tiket event untuk melihatnya di halaman ini.</p>
+          <Link className="button button-primary" href="/event">
+            Lihat event
+          </Link>
+        </div>
+      ) : (
+        <section className="event-grid">
+          {pesanan.map((item) => (
+            <article className="event-card" key={item.nomor}>
+              <div className="event-card-body">
+                <span className="eyebrow">Pesanan #{item.nomor}</span>
+                <h2>{item.events?.judul ?? "Event"}</h2>
+                <p>{item.nama_pemesan}</p>
+                <p>{item.jumlah_tiket} tiket</p>
+                <strong>{rupiah(item.total_harga)}</strong>
+                <form action={batalkanPesanan} className="mt-4">
+                  <input type="hidden" name="nomor" value={item.nomor} />
+                  <button className="button button-secondary" type="submit">
+                    Batalkan pesanan
+                  </button>
+                </form>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+    </>
+  );
 }
 
-export async function batalkanPesanan(formData: FormData) {
-  const nomor = Number(formData.get("nomor"));
-  const toples = await cookies();
-  const namaSaya = toples.get("nama")?.value;
-  if (!Number.isInteger(nomor) || !namaSaya) return;
-
-  // syarat kepemilikan ikut dalam perintah hapus: pesanan orang lain tidak akan terhapus
-  const { data: batal } = await supabaseAdmin
-    .from("pesanan")
-    .delete()
-    .eq("nomor", nomor)
-    .eq("nama", namaSaya)
-    .select()
-    .maybeSingle();
-
-  if (!batal) return;
-
-  const event = await ambilEvent(batal.event_id);
-  if (event) {
-    const terisiBaru = Math.max(0, event.terisi - batal.jumlah);
-    await supabaseAdmin
-      .from("events")
-      .update({ terisi: terisiBaru })
-      .eq("id", batal.event_id);
-  }
-
-  revalidatePath("/event");
-  revalidatePath(`/event/${batal.event_id}`);
-  revalidatePath("/pesanan");
+export default function HalamanPesanan() {
+  return (
+    <div className="page-wrap inner-page">
+      <header className="page-heading">
+        <span className="eyebrow">Riwayat pemesanan</span>
+        <h1>Pesanan tiket</h1>
+        <p>Daftar pesanan yang tersimpan di Supabase.</p>
+      </header>
+      <Suspense
+        fallback={<div className="empty-state compact"><p>Memuat pesanan...</p></div>}
+      >
+        <DaftarPesanan />
+      </Suspense>
+    </div>
+  );
 }

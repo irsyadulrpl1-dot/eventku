@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { events } from "@/Data/events";
 import { saveFavoriteIds, useFavoriteIds } from "@/lib/favorites";
 import Ikon from "./Ikon";
 import KartuEvent from "./KartuEvent";
+import type { Event } from "@/Data/events";
 
-export default function DaftarFavorite() {
+export default function DaftarFavorite({ events }: { events: Event[] }) {
   const { ids: favoriteIds, error: storageError } = useFavoriteIds();
   const [error, setError] = useState("");
 

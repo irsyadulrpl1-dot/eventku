@@ -10,7 +10,9 @@ export async function GET() {
       {
         message:
           "Gagal memuat event dari database: " +
-          (error instanceof Error ? error.message : "Kesalahan tidak diketahui."),
+          (error instanceof Error
+            ? error.message
+            : "Kesalahan tidak diketahui."),
       },
       { status: 500 },
     );
