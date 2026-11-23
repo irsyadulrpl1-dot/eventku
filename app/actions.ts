@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function batalkanPesanan(formData: FormData) {
   const nomor = Number(formData.get("nomor"));
   if (!Number.isInteger(nomor)) return;
+  const supabaseAdmin = getSupabaseAdmin();
 
   // Ambil data pesanan dulu untuk mengembalikan kuota event
   const { data: pesanan } = await supabaseAdmin

@@ -1,7 +1,11 @@
 import { getSupabase } from "@/lib/supabase";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import type { Event } from "@/Data/events";
 import type { Pesanan } from "@/Data/pesanan";
+
+type PesananQueryRow = Omit<Pesanan, "events"> & {
+  events: { judul: string } | { judul: string }[] | null;
+};
 
 export async function ambilEvents(): Promise<Event[]> {
   const supabase = getSupabase();
@@ -41,14 +45,16 @@ export async function ambilTerkait(event: Event): Promise<Event[]> {
 export async function hitungPesanan(
   eventId: number,
 ): Promise<{ totalPesanan: number; totalTiket: number }> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("pesanan")
     .select("jumlah_tiket")
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .overrideTypes<{ jumlah_tiket: number | null }[], { merge: false }>();
   if (error) throw new Error("Gagal menghitung pesanan: " + error.message);
 
   const totalPesanan = data.length;
-  const totalTiket = data.reduce(
+  const totalTiket = data.reduce<number>(
     (acc, curr) => acc + (curr.jumlah_tiket || 0),
     0,
   );
@@ -57,10 +63,12 @@ export async function hitungPesanan(
 }
 
 export async function ambilPesanan(): Promise<Pesanan[]> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("pesanan")
     .select("nomor, event_id, nama_pemesan, email, jumlah_tiket, total_harga, dibuat, events(judul)")
-    .order("nomor", { ascending: false });
+    .order("nomor", { ascending: false })
+    .overrideTypes<PesananQueryRow[], { merge: false }>();
   if (error) throw new Error("Gagal memuat pesanan: " + error.message);
   return data.map((item) => ({
     nomor: item.nomor,

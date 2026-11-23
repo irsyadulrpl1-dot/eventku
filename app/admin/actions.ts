@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { pastikanAdmin } from "@/lib/sesi";
 
 export type HasilEvent = {
@@ -27,6 +27,7 @@ export async function simpanEvent(
   formData: FormData,
 ): Promise<HasilEvent> {
   await pastikanAdmin(); // server action bisa di panggil langsung, jadi periksa lagi
+  const supabaseAdmin = getSupabaseAdmin();
 
   const idTekst = String(formData.get("id") ?? "");
   const id = idTekst ? Number(idTekst) : null;
@@ -110,6 +111,7 @@ export async function simpanEvent(
 
 export async function hapusEvent(formData: FormData) {
   await pastikanAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) redirect("/admin");
 
