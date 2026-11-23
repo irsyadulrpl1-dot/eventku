@@ -1,9 +1,10 @@
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { Event } from "@/Data/events";
 import type { Pesanan } from "@/Data/pesanan";
 
 export async function ambilEvents(): Promise<Event[]> {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("events")
     .select("*")
@@ -14,6 +15,7 @@ export async function ambilEvents(): Promise<Event[]> {
 
 export async function ambilEvent(id: number): Promise<Event | null> {
   if (!Number.isInteger(id)) return null;
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("events")
     .select("*")
@@ -24,6 +26,7 @@ export async function ambilEvent(id: number): Promise<Event | null> {
 }
 
 export async function ambilTerkait(event: Event): Promise<Event[]> {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("events")
     .select("*")

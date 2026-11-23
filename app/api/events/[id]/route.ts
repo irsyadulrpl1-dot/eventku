@@ -1,8 +1,10 @@
 import { ambilEvents } from "@/Data/ambil";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
+import { connection } from "next/server";
 
 export async function GET() {
   try {
+    await connection();
     const events = await ambilEvents();
     return Response.json(events);
   } catch (error: unknown) {
@@ -20,6 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  await connection();
   const body: unknown = await request.json().catch(() => null);
   if (typeof body !== "object" || body === null) {
     return Response.json(
@@ -40,6 +43,8 @@ export async function POST(request: Request) {
       { status: 404 },
     );
   }
+
+  const supabase = getSupabase();
 
   // Ambil data event dari Supabase berdasarkan ID
   const { data: event, error: eventError } = await supabase

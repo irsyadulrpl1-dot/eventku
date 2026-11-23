@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { rupiah, sisaTiket, type Event } from "@/Data/events";
-import { supabase } from "../../lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 export default function FormPesan({ event }: { event: Event }) {
@@ -48,6 +48,7 @@ export default function FormPesan({ event }: { event: Event }) {
 
     try {
       const totalHarga = event.harga * jumlahTiket;
+      const supabase = getSupabase();
 
       // 1. Simpan pesanan ke tabel 'pesanan' di Supabase
       const { error: insertError } = await supabase.from("pesanan").insert([

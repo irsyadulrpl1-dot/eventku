@@ -1,10 +1,11 @@
 import { Suspense } from "react";
-import { supabase } from "../../lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import KartuEvent from "@/components/KartuEvent";
 import type { Event } from "@/Data/events";
 
 // Komponen internal untuk mengambil data dari Supabase dan menampilkannya dalam grid
 async function DaftarSemuaEvent() {
+  const supabase = getSupabase();
   const { data: eventsFromSupabase, error } = await supabase
     .from("events")
     .select("*");
