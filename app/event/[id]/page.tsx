@@ -8,27 +8,36 @@ import FormPesan from "@/components/FormPesan";
 import TombolFavorite from "@/components/TombolFavorite";
 import EventTerkait from "@/components/EventTerkait";
 
-export async function generateMetadata({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const event = await ambilEvent(Number(id));
+  const parsedId = Number(id);
+  
+  if (isNaN(parsedId)) {
+    return { title: "Event tidak ditemukan" };
+  }
+
+  const event = await ambilEvent(parsedId);
   if (!event) return { title: "Event tidak ditemukan" };
+  
   return {
     title: event.judul,
     description: `${event.kategori} di ${event.lokasi}, ${event.tanggal}. ${rupiah(event.harga)}.`,
   };
 }
 
-export default async function Detail({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function Detail({ params }: Props) {
   const { id } = await params;
-  const event = await ambilEvent(Number(id));
+  const parsedId = Number(id);
+
+  if (isNaN(parsedId)) {
+    notFound();
+  }
+
+  const event = await ambilEvent(parsedId);
   if (!event) notFound();
 
   const { totalPesanan, totalTiket } = await hitungPesanan(event.id);

@@ -1,17 +1,21 @@
 import { Suspense } from "react";
-import { getSupabase } from "@/lib/supabase";
+import { ambilEvents } from "@/Data/ambil";
 import KartuEvent from "@/components/KartuEvent";
 import type { Event } from "@/Data/events";
 
 // Komponen internal untuk mengambil data dari Supabase dan menampilkannya dalam grid
 async function DaftarSemuaEvent() {
-  const supabase = getSupabase();
-  const { data: eventsFromSupabase, error } = await supabase
-    .from("events")
-    .select("*");
-
-  const events: Event[] =
-    error || !eventsFromSupabase ? [] : eventsFromSupabase;
+  let events: Event[];
+  try {
+    events = await ambilEvents();
+  } catch {
+    return (
+      <div className="empty-state compact">
+        <h2>Gagal memuat event</h2>
+        <p>Periksa konfigurasi Supabase dan log server untuk detail error.</p>
+      </div>
+    );
+  }
 
   if (events.length === 0) {
     return (

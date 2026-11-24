@@ -7,13 +7,31 @@ type PesananQueryRow = Omit<Pesanan, "events"> & {
   events: { judul: string } | { judul: string }[] | null;
 };
 
+type SupabaseError = {
+  code?: string | null;
+  message: string;
+  details?: string | null;
+  hint?: string | null;
+};
+
+function laporkanGalatSupabase(konteks: string, error: SupabaseError): never {
+  const detail = {
+    code: error.code ?? null,
+    message: error.message || "Pesan error Supabase tidak tersedia",
+    details: error.details ?? null,
+    hint: error.hint ?? null,
+  };
+  console.error(`[Supabase] ${konteks}: ${JSON.stringify(detail)}`);
+  throw new Error(`${konteks}: ${detail.message}`);
+}
+
 export async function ambilEvents(): Promise<Event[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("events")
     .select("*")
     .order("tanggal");
-  if (error) throw new Error("Gagal memuat event: " + error.message);
+  if (error) laporkanGalatSupabase("Gagal memuat event", error);
   return data as Event[];
 }
 
@@ -25,7 +43,7 @@ export async function ambilEvent(id: number): Promise<Event | null> {
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  if (error) throw new Error("Gagal memuat event: " + error.message);
+  if (error) laporkanGalatSupabase("Gagal memuat event", error);
   return data as Event | null;
 }
 
@@ -37,7 +55,7 @@ export async function ambilTerkait(event: Event): Promise<Event[]> {
     .eq("kategori", event.kategori)
     .neq("id", event.id)
     .order("tanggal");
-  if (error) throw new Error("Gagal memuat event terkait: " + error.message);
+  if (error) laporkanGalatSupabase("Gagal memuat event terkait", error);
   return data as Event[];
 }
 

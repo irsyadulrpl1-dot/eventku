@@ -6,17 +6,23 @@ import KartuEvent from "@/components/KartuEvent";
 
 // Komponen terpisah untuk mengambil dan merender daftar event
 async function DaftarEventTerdekat() {
-  const events = await ambilEvents().catch(() => null);
+  let events;
+  try {
+    events = await ambilEvents();
+  } catch {
+    events = null;
+  }
 
   if (!events) {
     return (
       <div className="empty-state compact">
         <h2>Gagal memuat event</h2>
-        <p>Pastikan koneksi database Supabase kamu sudah benar.</p>
+        <p>
+          Periksa konfigurasi Supabase dan log server untuk detail error.
+        </p>
       </div>
     );
   }
-
   const terdekat = [...events]
     .sort(
       (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
